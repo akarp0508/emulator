@@ -1,0 +1,667 @@
+Ogólne informacje:
+
+ - 32-bitowy
+ - 8 rejestrów ogólnego przeznaczenia (r0-r7)
+ - 3 rejestry dodatkowe:
+    - SP (wskaźnik stosu)
+    - PC (licznik programu)
+    - FL (rejestr flag)
+ - wartości podane w instrukcji są rozszerzane do 32 bitów:
+    - z zachowaniem znaku (dopełnienie jedynkami) jeżeli wartość jest liczbą
+    - bez zachowania znaku (dopełnienie zerami) jeżeli wartość jest adresem
+ - wspólna szyna pamięci i I/O (grafika, klawiatura, kontroler przerwań, ledy itp)
+ - 32-bitowa przestrzeń adresowa 0x00000000-0xFFFFFFFF (4 GB)
+ - pod każdym adresem pamięci/IO znajduje się 8 bitów danych
+    - pod najniższym adresem znajduje się pierwszy bajt liczby (bity 7-0)
+    - pod najwyższym adresem znajduje się ostatni bajt liczby
+    - 32-bitowe dane zajmują 4 adresy
+    - 16-bitowe dane zajmują 2 adresy
+ - procesor zaczyna wykonywać program od adresu 0x40 (64)
+ - adresy 0x00-0x3F to tablica przerwań
+
+Flagi:
+
+ - Flagi procesora są przechowywane w rejestrze FL
+ - bit 0 to flaga przeniesienia (C)
+ - bit 1 to flaga przepełnienia (O)
+ - bit 2 to flaga zera (Z)
+ - bit 3 to flaga ujemności (N)
+ - bit 4 to flaga przerwania (I)
+ - pozostałe bity nie są wykorzystywane
+
+Info o instrukcjach:
+
+ - instrukcja może mieć od 1 do 6 bajtów długości
+    - instrukcje nie wykorzystujące rejestrów A,B i liczby/adresu mają długość 1 bajta
+    - instrukcje wykorzystujące rejestr A,B lub oba i niewykorzystujące liczby/adresu mają długość 2 bajtów
+    - instrukcje wykorzystujące liczbę/adres mają długość 2-6 bajtów
+ - konkretny rozmiar instrukcji o rozmiarze 2-6 bajtów zależy od długości liczby/adresu:
+    - 2 bajty - liczba/adres=0
+    - 3 bajty - liczba/adres ma 8 bitów
+    - 4 bajty - liczba/adres ma 16 bitów
+    - 6 bajtów - liczba/adres ma 32 bity
+ - bity 7-0 to kod instrukcji (0x00-0xFF)
+ - bity 10-8 to rejestr A (R0-R7)
+ - bity 13-11 to rejestr B (R0-R7)
+ - bity 15-14 to długość liczby/adresu:
+    - 00 - liczba/adres = 0
+    - 01 - liczba/adres ma 8 bitów
+    - 10 - liczba/adres ma 16 bitów
+    - 11 - liczba/adres ma 32 bity
+ - niektóre mnemoniki są wykorzystywane to kilku instrukcji np: (nieistotne do emulatora ale chuj)
+    - ADD r0 r1 (kod instrukcji = 0x01)
+    - ADD r2 10 (kod instrukcji = 0x02)
+ - znak pod flagą w opisie instrukcji oznacza jaki wpływ ma instrukcja na daną flagę:
+    - 1 - flaga jest ustawiana na 1
+    - 0 - flaga jest ustawiana na 0
+    - X - flaga jest ustawiana według poniższych zasad:
+        - flaga C - jeżeli wynik dodawania/odejmowania nie mieści się w 32 bitach
+        - flaga O - jeżeli znak wyniku dodawania/odejmowania jest odwrotny niż powinien (np jak do 2147483647 dodasz 1 i wyjdzie -2147483648)
+        - flaga Z - jeżeli wynik jest równy zero (z wyjątkiem instrukcji BTST)
+        - flaga N - jeżeli wynik jest ujemny
+    - pusta kratka oznacza brak zmian
+ - wszystkie operacje na stosie są 32-bitowe (wskaźnik stosu zwiększa/zmniejsza się o 4)
+ - jeżeli przy odczycie z pamięci/IO ze zwiększeniem/zmniejszeniem rejestru adresowego (B) rejestr A to ten sam rejestr co rejestr B to w rejestrze jest zapisywana wartość z pamięci/IO
+ - adres pamięci/IO musi być wielokrotnością 4 przy operacjach 32-bitowych lub wielokrotnością 2 przy operacjach 16-bitowych (instrukcje i dane 8-bitowe mogą być odczytywane z dowolnego adresu)
+ - jeżeli adres nie jest odpowiednią wielokrotnością to jest zaokrąglany w dół do najbliższej wielokrotności
+ - niezdefiniowane kody instrukcji zatrzymują procesor
+
+Lista instrukcji:
+
+0x00 - NOP
+Przechodzi do następnej instrukcji
+|C|O|Z|N|I|
+| | | | | |
+
+0x01 - ADD reg-reg
+Dodaje liczbę z rejestru B do liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x02 - ADD reg-imm
+Dodaje liczbę z instrukcji do liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x03 - ADC reg-reg
+Dodaje liczbę z rejestru B do liczby z rejestru A oraz flagę przeniesienia i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x04 - ADC reg-imm
+Dodaje liczbę z instrukcji do liczby z rejestru A oraz flagę przeniesienia i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x05 - SUB reg-reg
+Odejmuje liczbę z rejestru B od liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x06 - SUB reg-imm
+Odejmuje liczbę z instrukcji od liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x07 - SBC reg-reg
+Odejmuje liczbę z rejestru B od liczby z rejestru A oraz flagę przeniesienia i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x08 - SBC reg-imm
+Odejmuje liczbę z instrukcji od liczby z rejestru A oraz flagę przeniesienia i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x09 - AND reg-reg
+Wykonuje operacje AND na liczbach z rejestrów A i B i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x0A - AND reg-imm
+Wykonuje operacje AND na liczbie z rejestru A i liczbie z instrukcji i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x0B - OR reg-reg
+Wykonuje operacje OR na liczbach z rejestrów A i B i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x0C - OR reg-imm
+Wykonuje operacje OR na liczbie z rejestru A i liczbie z instrukcji i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x0D - XOR reg-reg
+Wykonuje operacje XOR na liczbach z rejestrów A i B i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x0E - XOR reg-imm
+Wykonuje operacje XOR na liczbie z rejestru A i liczbie z instrukcji i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x0F - LSL reg-reg
+Przesunięcie logiczne w lewo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x10 - LSL reg-imm
+Przesunięcie logiczne w lewo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x11 - LSR reg-reg
+Przesunięcie logiczne w prawo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x12 - LSR reg-imm
+Przesunięcie logiczne w prawo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x13 - ASR reg-reg
+Przesunięcie arytmetyczne w prawo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x14 - ASR reg-imm
+Przesunięcie arytmetyczne w prawo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x15 - ROT reg-reg
+Przesunięcie cykliczne w lewo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x16 - ROT reg-imm
+Przesunięcie cykliczne w lewo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x17 - MLTL reg-reg
+Mnoży liczbę z rejestru A przez liczbę z rejestru B i zapisuje bity 31-0 wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x18 - MLTL reg-imm
+Mnoży liczbę z rejestru A przez liczbę z instrukcji i zapisuje bity 31-0 wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x19 - MLTH reg-reg
+Mnoży ze znakiem liczbę z rejestru A przez liczbę z rejestru B i zapisuje bity 63-32 wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x1A - MLTH reg-imm
+Mnoży ze znakiem liczbę z rejestru A przez liczbę z instrukcji i zapisuje bity 63-32 wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x1B - MLTHU reg-reg
+Mnoży bez znaku liczbę z rejestru A przez liczbę z rejestru B i zapisuje bity 63-32 wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x1C - MLTHU reg-imm
+Mnoży bez znaku liczbę z rejestru A przez liczbę z instrukcji i zapisuje bity 63-32 wyniku w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x1D - DIV reg-reg
+Dzieli ze znakiem liczbę z rejestru A przez liczbę z rejestru B i zapisuje wynik dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x1E - DIV reg-imm
+Dzieli ze znakiem liczbę z rejestru A przez liczbę z instrukcji i zapisuje wynik dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x1F - DIVU reg-reg
+Dzieli bez znaku liczbę z rejestru A przez liczbę z rejestru B i zapisuje wynik dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x20 - DIVU reg-imm
+Dzieli bez znaku liczbę z rejestru A przez liczbę z instrukcji i zapisuje wynik dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x21 - MOD reg-reg
+Dzieli ze znakiem liczbę z rejestru A przez liczbę z rejestru B i zapisuje resztę z dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x22 - MOD reg-imm
+Dzieli ze znakiem liczbę z rejestru A przez liczbę z instrukcji i zapisuje resztę z dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x23 - MODU reg-reg
+Dzieli bez znaku liczbę z rejestru A przez liczbę z rejestru B i zapisuje resztę z dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x24 - MODU reg-imm
+Dzieli bez znaku liczbę z rejestru A przez liczbę z instrukcji i zapisuje resztę z dzielenia w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x25 - INC
+Zwiększa liczbę w rejestrze A o 1
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x26 - DEC
+Zwiększa liczbę w rejestrze A o 1
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x27 - NOT
+Wykonuje operacje NOT na liczbie z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x28 - NEG
+Odwraca znak liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x29 - TST
+Ustawia flagę Z i N na podstawie liczby z rejestru A nie zmieniając jej
+|C|O|Z|N|I|
+| | |X|X| |
+
+0x2A - BTST reg-reg
+Ustawia flagę Z na wartość wybranego bitu z rejestru A. Bit jest wybierany przez liczbę z rejestru B (tylko bity 4-0 mają znaczenie)
+|C|O|Z|N|I|
+| | |X| | |
+
+0x2B - BTST reg-imm
+Ustawia flagę Z na wartość wybranego bitu z rejestru A. Bit jest wybierany przez liczbę z instrukcji (tylko bity 4-0 mają znaczenie)
+|C|O|Z|N|I|
+| | |X| | |
+
+0x2C - CMP reg-reg
+Odejmuje liczbę z rejestru B od liczby z rejestru A bez zapisywania wyniku (tylko flagi są ustawiane)
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x2D - CMP reg-imm
+Odejmuje liczbę z instrukcji od liczby z rejestru A bez zapisywania wyniku (tylko flagi są ustawiane)
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x2E - ADSP
+Dodaje liczbę z wskaźnika stosu do liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x2F - ADPC
+Dodaje liczbę z licznika programu do liczby z rejestru A i zapisuje wynik w rejestrze A
+|C|O|Z|N|I|
+|X|X|X|X| |
+
+0x30 - JMP
+Zapisuje adres z instrukcji do licznika programu (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x31 - CALL
+Zapisuje adres z instrukcji do licznika programu i zapisuje adres powrotu na stosie (Adres = liczba z rejestru B + liczba z instrukcji, Adres powrotu = adres następnej instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x32 - RET
+Zdejmuje adres powrotu ze stosu i zapisuje go w liczniku programu
+|C|O|Z|N|I|
+| | | | | |
+
+0x33 - BEQ
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga Z jest równa 1 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x34 - BNE
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga Z jest równa 0 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x35 - BLS
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga N ma wartość odwrotną od flagi O (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x36 - BLE
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga N ma wartość odwrotną od flagi O lub flaga Z jest równa 1 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x37 - BGR
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga N ma taką samą wartość jak flaga O i flaga Z jest równa 0 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x38 - BGE
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga N ma taką samą wartość jak flaga O (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x39 - BLSU
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga C jest równa 1 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x3A - BLEU
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga C jest równa 1 lub flaga Z jest równa 1 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x3B - BGRU
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga C jest równa 0 i flaga Z jest równa 0 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x3C - BGEU
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga C jest równa 0 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x3D - BOF
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga O jest równa 1 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x3E - BNO
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga O jest równa 0 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x3F - BPS
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga N jest równa 0 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x40 - BNG
+Zapisuje adres z instrukcji do licznika programu jeżeli flaga N jest równa 1 (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x41 - MOV reg-reg
+Zapisuje liczbę z rejestru B w rejestrze A
+|C|O|Z|N|I|
+| | | | | |
+
+0x42 - MOV reg-imm
+Zapisuje liczbę z instrukcji w rejestrze A
+|C|O|Z|N|I|
+| | | | | |
+
+0x43 - PSH
+Zapisuje liczbę z rejestru A na stosie
+|C|O|Z|N|I|
+| | | | | |
+
+0x44 - POP
+Zdejmuje liczbę ze stosu i zapisuje ją w rejestrze A
+|C|O|Z|N|I|
+| | | | | |
+
+0x45 - LDB addr
+Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x46 - LDB addr++
+Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x47 - LDB addr--
+Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x48 - LDBU addr
+Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x49 - LDBU addr++
+Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x4A - LDBU addr--
+Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x4B - LDH addr
+Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x4C - LDH addr++
+Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x4D - LDH addr--
+Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x4E - LDHU addr
+Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x4F - LDHU addr++
+Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x50 - LDHU addr--
+Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x51 - LDW addr
+Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x52 - LDW addr++
+Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 4)
+|C|O|Z|N|I|
+| | | | | |
+
+0x53 - LDW addr--
+Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 4)
+|C|O|Z|N|I|
+| | | | | |
+
+0x54 - STB addr
+Zapisuje w pamięci/IO bity 7-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x55 - STB addr++
+Zapisuje w pamięci/IO bity 7-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x56 - STB addr--
+Zapisuje w pamięci/IO bity 7-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x57 - STH addr
+Zapisuje w pamięci/IO bity 15-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x58 - STH addr++
+Zapisuje w pamięci/IO bity 15-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x59 - STH addr--
+Zapisuje w pamięci/IO bity 15-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x5A - STW addr
+Zapisuje w pamięci/IO bity 31-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji)
+|C|O|Z|N|I|
+| | | | | |
+
+0x5B - STW addr++
+Zapisuje w pamięci/IO bity 31-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 4)
+|C|O|Z|N|I|
+| | | | | |
+
+0x5C - STW addr--
+Zapisuje w pamięci/IO bity 31-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 4)
+|C|O|Z|N|I|
+| | | | | |
+
+0x5D - CPB addr
+Odczytuje 8-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A)
+|C|O|Z|N|I|
+| | | | | |
+
+0x5E - CPB addr++
+Odczytuje 8-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zwiększana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x5F - CPB addr--
+Odczytuje 8-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zmniejszana o 1)
+|C|O|Z|N|I|
+| | | | | |
+
+0x60 - CPH addr
+Odczytuje 16-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A)
+|C|O|Z|N|I|
+| | | | | |
+
+0x61 - CPH addr++
+Odczytuje 16-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zwiększana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x62 - CPH addr--
+Odczytuje 16-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zmniejszana o 2)
+|C|O|Z|N|I|
+| | | | | |
+
+0x63 - CPW addr
+Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A)
+|C|O|Z|N|I|
+| | | | | |
+
+0x64 - CPW addr++
+Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zwiększana o 4)
+|C|O|Z|N|I|
+| | | | | |
+
+0x65 - CPW addr--
+Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zmniejszana o 4)
+|C|O|Z|N|I|
+| | | | | |
+
+0x66 - SEC
+Ustawia flagę C na 1
+|C|O|Z|N|I|
+|1| | | | |
+
+0x67 - SEO
+Ustawia flagę O na 1
+|C|O|Z|N|I|
+| |1| | | |
+
+0x68 - SEZ
+Ustawia flagę Z na 1
+|C|O|Z|N|I|
+| | |1| | |
+
+0x69 - SEN
+Ustawia flagę N na 1
+|C|O|Z|N|I|
+| | | |1| |
+
+0x6A - SEI
+Ustawia flagę I na 1 (blokuje przerwania)
+|C|O|Z|N|I|
+| | | | |1|
+
+0x6B - CLC
+Ustawia flagę C na 0
+|C|O|Z|N|I|
+|0| | | | |
+
+0x6C - CLO
+Ustawia flagę O na 0
+|C|O|Z|N|I|
+| |0| | | |
+
+0x6D - CLZ
+Ustawia flagę Z na 0
+|C|O|Z|N|I|
+| | |0| | |
+
+0x6E - CLN
+Ustawia flagę N na 0
+|C|O|Z|N|I|
+| | | |0| |
+
+0x6F - CLI
+Ustawia flagę I na 0 (odblokowuje przerwania)
+|C|O|Z|N|I|
+| | | | |0|
+
+0x70 - IRET
+Przywraca zawartość rejestru flag ze specjalnego rejestru (z wyjątkiem flagi I, która jest ustawiana na 0) i zapisuje adres powrotu z przerwania w liczniku programu
+|C|O|Z|N|I|
+| | | | |0|
+
+0x71 - WFI
+Wykonuje się w kółko aż procesor dostanie sygnał przerwania (jeżeli flaga przerwań będzie równa 1 to procesor się zawiesi)
+|C|O|Z|N|I|
+| | | | | |
+
+0x72 - STP
+Zatrzymuje procesor
+|C|O|Z|N|I|
+| | | | | |
+
+Przerwania:
+
+ - sygnał (IRQ) powodujący przerwanie
+ - sygnał (IACK) potwierdzający przyjęcie przerwania (wysyłany po przejściu procesora do obsługi przerwania po wykonaniu instrukcji, trwa 1 cykl)
+ - 16 różnych przerwań (wybierane przez sygnał IVCT)
+ - tablica przerwań (adresy 0x00-0x3F) zawiera adresy kodu obsługi przerwań
+    - adresy 0x03-0x00 to adres kodu przerwania 0
+    - adresy 0x04-0x07 to adres kodu przerwania 1 itp
+ - 2 specjalne rejestry do przywracania flag i licznika programu po powrocie z przerwania (niedostępne dla programisty)
+ - 1 specjalny rejestr do tymczasowego przechowywania adresu przerwania (niedostępne dla programisty)
+ - Flaga I blokuje przerwania jeżeli jest ustawiona na 1 (sygnał IRQ jest ignorowany)
+
+Procedura obsługi przerwania:
+
+ - Procesor otrzymuje sygnał przerwania (IRQ) i wektor przerwania (IVCT) np 4
+ - Procesor kończy wykonywać instrukcję podczas której dostał sygnał IRQ (włącznie z nadpisaniem licznika programu)
+ - Procesor zamiast do następnej instrukcji przechodzi do obsługi przerwania
+ - Procesor wysyła sygnał IACK na 1 cykl
+ - Procesor odczytuje adres kodu obsługi przerwania z pamięci spod adresu IVCT * 4 (w tym przypadku 4 * 4 czyli 0x10) i zapisuje ten adres w specjalnym rejestrze 
+ - Procesor zapisuje flagi i wartość licznika programu w rejestrach do przywracania
+ - Procesor ustawia flagę I na 1
+ - Procesor zapisuje do licznika programu adres kodu obsługi przerwania (skok do kodu obsługi przerwania)

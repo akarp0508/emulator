@@ -8,29 +8,21 @@ import java.util.Random;
 public class EmulationEngine implements Runnable{
     private final EmulatorWindow window;
 
-    private final GPUEmulationEngine gpu;
+    private int[] registers = new int[8];
 
-    private Instruction[] instructions = new Instruction[0];
-
-    private int currentInstructionIndex;
-
-    private int[] registers = new int[64];
-    private int[] ram32 = new int[16384];
-    private short[] ram16 = new short[8192];
-    private byte[] ram8 = new byte[8192];
-    private byte[] ram4 = new byte[8192];
-    private boolean[] ram1 = new boolean[8192];
+    private int stackPointer;
+    private int programCounter;
+    private int flags;
 
     private boolean running = true;
 
-    private Random random = new Random();
 
-    private Thread gpuThread;
+    //private Thread gpuThread;
 
     public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window) {
         this.window = window;
-        new InstructionDecoder();
-        gpu = new GPUEmulationEngine(epp);
+        //new InstructionDecoder();
+        //gpu = new GPUEmulationEngine(epp);
     }
 
     public void setRegister(byte index,int value){

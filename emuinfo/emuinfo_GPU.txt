@@ -1,0 +1,38 @@
+ - rozdzielczość 640x480 (sygnał przesyłany do monitora / wielkość okna emulatora)
+ - 12-bitowy kolor (RGB 4,4,4)
+ - odświeżanie 60 hz
+ - sygnały przerwań V-blank i H-blank:
+    - sygnał V-blank jest włączany po narysowaniu ostatniego piksela klatki (639, 479)
+    - sygnał H-blank jest włączany po narysowaniu ostatniego piksela linii
+    - sygnały V-blank i H-blank trwają 1 cykl grafiki (25-25.175 MHz jeszcze nie wiem) i są włączane tylko jeżeli są aktywowane we flagach GPU
+ - 4 tryby graficzne:
+    - tryb tekstowy (tryb 0):
+       - 80x30 znaków
+       - znak 8x16 pikseli (WxH)
+       - 256 różnych znaków
+       - redefiniowalne znaki
+       - 16 kolorów tła i znaku
+       - stała paleta (osobna od palety trybów graficznych)
+    - tryb graficzny 160x120 (tryb 1)
+       - rozdzielczość 160x120 pikseli
+       - paleta 256 kolorów
+       - redefiniowalna paleta
+       - 1 bajt w framebufferze to 1 piksel
+    - tryb graficzny 320x240 (tryb 2)
+       - rozdzielczość 320x240 pikseli
+       - paleta 16 kolorów
+       - redefiniowalna paleta
+       - 1 bajt w framebufferze to 2 piksele
+    - tryb graficzny 640x480 (tryb 3)
+       - rozdzielczość 640x480 pikseli
+       - paleta 2 kolorów
+       - redefiniowalna paleta
+       - 1 bajt w framebufferze to 8 pikseli
+
+Adresy:
+    0x90000000-0x900095FF (38400 B x2) - framebuffer (oba framebuffery są zmapowane pod te same adresy a flaga GPU wybiera który jest widoczny na szynie pamięci/IO, drugi jest wyświetlany)
+    0x90009600-0x900097FF (512 B) - paleta trybów graficznych (każdy kolor to 2 bajty, bity 11-0 to kolor, reszta niewykorzystywana)
+    0x90009800-0x9000A7FF (4096 B) - lista znaków trybu tekstowego (16 bajtów to 1 znak, bajt 1 to pierwsza linijka znaku od góry, 0 to tło, 1 to znak)
+    0x9000A800-0x9000BABF (4800 B) - kolory i wybór znaku (2 bajty na znak, 2400 znaków, bajt 1 to wybór znaku, bajt drugi to kolory tła i znaku, bity 7-4 to kolor tła, bity 3-0 to kolor znaku)
+    0x9000BAC0 (1 B) - flagi GPU (bit 0 włącza renderowanie obrazu, bit 1 aktywuje sygnał V-blank, bit 2 aktywuje sygnał H-blank, bit 3 zamienia framebuffery)
+    0x9000BAC1 (1 B) - tryb graficzny (bity 1-0 wybierają tryb graficzny)

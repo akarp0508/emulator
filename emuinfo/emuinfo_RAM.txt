@@ -1,0 +1,10 @@
+ - 32-bitowa pamięć
+ - adresy od 0x00000000 do 0x7FFFFFFF (2 GB, na płytce będzie 128 KB a w emulatorze zrób żeby się dało wybrać rozmiar do 2 GB)
+ - każdy adres to 8 bitów danych
+ - możliwość zapisu/odczytu danych:
+     - 8-bitowych
+     - 16-bitowych
+     - 32-bitowych
+
+Adresy:
+    0x00000000-0x7FFFFFFF (2147483647 B) - pamięć RAM

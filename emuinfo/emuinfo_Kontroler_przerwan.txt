@@ -1,0 +1,16 @@
+ - 16 sygnałów przerwania (IRQ0-IRQ15)
+ - sygnał wyjściowy do procesora powodujący przerwanie
+ - jeżeli rejestr IRQ0-IRQ15 jest równy 1 i dostanie sygnał przerwania to dalej ma wartość 1 (przerwanie wykona się tylko raz)
+ - jeżeli maska danego przerwania jest równa 0 to rejestr tego przerwania nie jest ustawiany na 1 po dostaniu sygnału IRQ
+
+Procedura przetwarzania zewnętrznego sygnału przerwania:
+ - jakiś układ puszcza sygnał IRQ np IRQ2
+ - kontroler po otrzymaniu sygnału IRQ zapisuje 1 w rejestrze o numerze IRQ (w tym przypadku 2)
+ - rejestry 0-15 przechodzą przez bramkę OR i wyjście tej bramki to sygnał IRQ do procesora
+ - sygnał IVCT to numer najniższego rejestru o wartości 1 (w tym przypadku 2)
+ - jeżeli np rejestry 3, 4, 5, 6, 7, 8 miałyby wartość 1 to na wyjściu IVCT jest wartość 3
+ - po otrzymaniu sygnału IACK od procesora kontroler ustawia rejestr o numerze IVCT na 0 (deaktywuje przerwanie)
+
+Adresy:
+    0x80000000 - maski przerwań 7-0 (każdy bit maskuje jedno przerwanie)
+    0x80000001 - maski przerwań 15-8 (każdy bit maskuje jedno przerwanie)
