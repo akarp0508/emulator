@@ -3,8 +3,6 @@ package akarp0508.emulator;
 import akarp0508.gui.EmulatorWindow;
 import akarp0508.gui.components.EmulationPreviewPanel;
 
-import java.util.Random;
-
 public class EmulationEngine implements Runnable{
     private final EmulatorWindow window;
 
@@ -12,9 +10,19 @@ public class EmulationEngine implements Runnable{
 
     private int stackPointer;
     private int programCounter;
-    private int flags;
+
+    /*
+         - bit 0 to flaga przeniesienia (C)
+         - bit 1 to flaga przepełnienia (O)
+         - bit 2 to flaga zera (Z)
+         - bit 3 to flaga ujemności (N)
+         - bit 4 to flaga przerwania (I)
+    */
+    private boolean[] flags = new boolean[32];
 
     private boolean running = true;
+
+    private byte[] RAM = new byte[Integer.MAX_VALUE];
 
 
     //private Thread gpuThread;
@@ -35,14 +43,8 @@ public class EmulationEngine implements Runnable{
         long lastTime = System.nanoTime();
         long actualIPS=0;
         while(running){
-            Instruction currentInstruction;
-            if(currentInstructionIndex<instructions.length)
-                currentInstruction= instructions[currentInstructionIndex];
-            else
-                currentInstruction= new Instruction(Instructions.ADD, new int[]{0, 0, 0});
-            currentInstructionIndex=(currentInstructionIndex+1)%16384;
 
-            executeInstruction(currentInstruction);
+            executeInstruction();
 
             actualIPS++;
             if(System.nanoTime()-lastTime>1000000000){
@@ -53,253 +55,322 @@ public class EmulationEngine implements Runnable{
         }
     }
 
-    private void executeInstruction(Instruction instruction){
-        int[] p = instruction.getParameters();
-        switch(instruction.getInst()){
-            case ADD:
-                registers[p[0]]=registers[p[1]]+registers[p[2]];
-                break;
-            case SUB:
-                registers[p[0]]=registers[p[1]]-registers[p[2]];
-                break;
-            case MUL:
-                registers[p[0]]=registers[p[1]]*registers[p[2]];
-                break;
-            case NEG:
-                registers[p[0]]=-registers[p[1]];
-                break;
-            case AND:
-                registers[p[0]]=registers[p[1]]&registers[p[2]];
-                break;
-            case OR:
-                registers[p[0]]=registers[p[1]]|registers[p[2]];
-                break;
-            case XOR:
-                registers[p[0]]=registers[p[1]]^registers[p[2]];
-                break;
-            case NOT:
-                registers[p[0]]=~registers[p[1]];
-                break;
-            case SLT:
-                registers[p[0]]=registers[p[1]]<registers[p[2]] ? 1 : 0;
-                break;
-            case SLTU:
-                registers[p[0]]=Integer.toUnsignedLong(registers[p[1]])<Integer.toUnsignedLong(registers[p[2]]) ? 1 : 0;
-                break;
-            case RUPW:
-                registers[p[0]]=(int)((Integer.toUnsignedLong(registers[p[1]])&0x0000ffff)+(Integer.toUnsignedLong(registers[p[2]])&0xffff0000));
-                break;
-            case SHL:
-                registers[p[0]]=registers[p[1]] << registers[p[2]];
-                break;
-            case SHR:
-                registers[p[0]]=registers[p[1]] >>> registers[p[2]];
-                break;
-            case SHA:
-                registers[p[0]]=registers[p[1]] >> registers[p[2]];
-                break;
-            case ROT:
-                registers[p[0]]=Integer.rotateRight(registers[p[1]], registers[p[2]]);
-                break;
-            case RND:
-                registers[p[0]]=random.nextInt();
-                break;
-            case ADDI:
-                registers[p[0]]=registers[p[1]]+p[2];
-                break;
-            case SUBI:
-                registers[p[0]]=registers[p[1]]-p[2];
-                break;
-            case MULI:
-                registers[p[0]]=registers[p[1]]*p[2];
-                break;
-            case ANDI:
-                registers[p[0]]=registers[p[1]]&p[2];
-                break;
-            case ORI:
-                registers[p[0]]=registers[p[1]]|p[2];
-                break;
-            case XORI:
-                registers[p[0]]=registers[p[1]]^p[2];
-                break;
-            case SLTI:
-                registers[p[0]]=registers[p[1]]<p[2] ? 1 : 0;
-                break;
-            case SLTUI:
-                registers[p[0]]=Integer.toUnsignedLong(registers[p[1]])<Integer.toUnsignedLong(p[2]) ? 1 : 0;
-                break;
-            case RUPWI:
-                registers[p[0]]=(int)((Integer.toUnsignedLong(registers[p[1]])&0x0000ffff)+(Integer.toUnsignedLong(p[2])&0xffff0000));
-                break;
-            case SHLI:
-                registers[p[0]]=registers[p[1]] << p[2];
-                break;
-            case SHRI:
-                registers[p[0]]=registers[p[1]] >>> p[2];
-                break;
-            case SHAI:
-                registers[p[0]]=registers[p[1]] >> p[2];
-                break;
-            case ROTI:
-                registers[p[0]]=Integer.rotateRight(registers[p[1]], p[2]);
-                break;
-            case BEQ:
-                currentInstructionIndex = registers[p[1]] == registers[p[2]] ? p[0] : currentInstructionIndex;
-                break;
-            case BNEQ:
-                currentInstructionIndex = registers[p[1]] != registers[p[2]] ? p[0] : currentInstructionIndex;
-                break;
-            case BLT:
-                currentInstructionIndex = registers[p[1]] < registers[p[2]] ? p[0] : currentInstructionIndex;
-                break;
-            case BGE:
-                currentInstructionIndex = registers[p[1]] >= registers[p[2]] ? p[0] : currentInstructionIndex;
-                break;
-            case BLTU:
-                currentInstructionIndex = Integer.toUnsignedLong(registers[p[1]]) < Integer.toUnsignedLong(registers[p[2]]) ? p[0] : currentInstructionIndex;
-                break;
-            case BGEU:
-                currentInstructionIndex = Integer.toUnsignedLong(registers[p[1]]) >= Integer.toUnsignedLong(registers[p[2]]) ? p[0] : currentInstructionIndex;
-                break;
-            case BGR:
-                currentInstructionIndex = registers[p[1]] > registers[p[2]] ? p[0] : currentInstructionIndex;
-                break;
-            case BGRU:
-                currentInstructionIndex = Integer.toUnsignedLong(registers[p[1]]) > Integer.toUnsignedLong(registers[p[2]]) ? p[0] : currentInstructionIndex;
-                break;
-            case LLIM:
-                registers[p[0]] = p[1];
-                break;
-            case LUIM:
-                registers[p[0]] &= 0x0000ffff;
-                registers[p[0]] |= p[1] << 16;
-                break;
-            case JMP:
-                currentInstructionIndex = registers[p[0]]+p[1];
-                //todo
-                break;
-            case JMPL:
-                registers[p[0]]=currentInstructionIndex;
-                currentInstructionIndex = registers[p[1]]+p[2];
-                //todo
-                break;
-            case LD1: //ram1[registers[p[1]]+p[2]]
-                registers[p[0]] &= 0xfffffffe;
-                registers[p[0]] |= ram1[Math.floorMod((registers[p[1]]+p[2]),ram1.length)] ? 1 : 0;
-                break;
-            case LD4: //ram4[registers[p[1]]+p[2]]
-                registers[p[0]] = ram4[Math.floorMod((registers[p[1]]+p[2]),ram4.length)];
-                break;
-            case LD8: //ram8[registers[p[1]]+p[2]]
-                registers[p[0]] = ram8[Math.floorMod((registers[p[1]]+p[2]),ram8.length)];
-                break;
-            case LD16: //ram8[registers[p[1]]+p[2]]
-                registers[p[0]] = ram16[Math.floorMod((registers[p[1]]+p[2]),ram16.length)];
-                break;
-            case LD32: //ram8[registers[p[1]]+p[2]]
-                registers[p[0]] = ram32[Math.floorMod((registers[p[1]]+p[2]),ram32.length)];
-                break;
-            case LDU4:
-                registers[p[0]] = ram4[Math.floorMod((registers[p[1]]+p[2]),ram4.length)] & 0xf;
-                break;
-            case LDU8:
-                registers[p[0]] = ram8[Math.floorMod((registers[p[1]]+p[2]),ram8.length)] & 0xff;
-                break;
-            case LDU16:
-                registers[p[0]] = ram16[Math.floorMod((registers[p[1]]+p[2]),ram16.length)] & 0xffff;
-                break;
-            case STR1:
-                ram1[Math.floorMod((registers[p[1]]+p[2]),ram1.length)] = (registers[p[0]] & 0b1) == 1;
-                break;
-            case STR4:
-                ram4[Math.floorMod((registers[p[1]]+p[2]),ram4.length)] = (byte) (registers[p[0]] & 0xf);
-                break;
-            case STR8:
-                ram8[Math.floorMod((registers[p[1]]+p[2]),ram8.length)] = (byte) (registers[p[0]] & 0xff);
-                break;
-            case STR16:
-                ram16[Math.floorMod((registers[p[1]]+p[2]),ram16.length)] = (short)(registers[p[0]] & 0xffff);
-                break;
-            case STR32:
-                ram32[Math.floorMod((registers[p[1]]+p[2]),ram32.length)] = registers[p[0]];
-                break;
-            case SDIO:
-                gpu.saveData(registers[p[1]],registers[p[2]],registers[p[3]]);
-                gpuThread = new Thread(gpu);
-                gpuThread.start();
-                break;
-            case RCIO:
-                //todo
-                break;
+    private void executeInstruction(){
+        byte v = RAM[programCounter+1];
+        byte A = (byte)(v & 0b111);
+        byte B = (byte)((v>>3) & 0b111);
+        byte byteCount = (byte)((v>>6) & 0b11);
+        int value = 0;
+        if(byteCount == 3)
+            byteCount = 4;
+        for(int i=0; i<byteCount; i++){
+            value = ( value << 8 ) | RAM[programCounter+2+i];
         }
-        registers[0]=0;
+        byteCount+=2;
+        switch(RAM[programCounter]) {
+            case 0:         //NOP
+                byteCount = 1;
+                break;
+            case 1:         //ADD reg-reg
+                byteCount = 2;
+                long result = Integer.toUnsignedLong(registers[A]) + Integer.toUnsignedLong(registers[B]);
+                registers[A] = (int)result;
+                flags[0] = ((result>>32)&1) == 1;
+                flags[1] = (int)result!=(long)registers[A]+registers[B];
+                flags[2] = result == 0;
+                flags[3] = ((result>>31)&1) == 1;
+                break;
+            case 2:         //ADD reg-imm
+                result = Integer.toUnsignedLong(registers[A]) + Integer.toUnsignedLong(value);
+                registers[A] = (int)result;
+                flags[0] = ((result>>32)&1) == 1;
+                flags[1] = (int)result!=(long)registers[A]+value;
+                flags[2] = result == 0;
+                flags[3] = ((result>>31)&1) == 1;
+                break;
+            case 3:         //ADC reg-reg
+                byteCount = 2;
+                result = Integer.toUnsignedLong(registers[A]) + Integer.toUnsignedLong(registers[B])+(flags[0]?1:0);
+                registers[A] = (int)result;
+                flags[0] = ((result>>32)&1) == 1;
+                flags[1] = (int)result!=(long)registers[A]+registers[B]+(flags[0]?1:0);
+                flags[2] = result == 0;
+                flags[3] = ((result>>31)&1) == 1;
+                break;
+            case 4:         //ADC reg-imm
+                result = Integer.toUnsignedLong(registers[A]) + Integer.toUnsignedLong(value)+(flags[0]?1:0);
+                registers[A] = (int)result;
+                flags[0] = ((result>>32)&1) == 1;
+                flags[1] = (int)result!=(long)registers[A]+value+(flags[0]?1:0);
+                flags[2] = result == 0;
+                flags[3] = ((result>>31)&1) == 1;
+                break;
+            case 5:         //SUB reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] - registers[B];
+                break;
+            case 6:         //SUB reg-imm
+                registers[A] = registers[A] - value;
+                break;
+            case 7:         //SBC reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] - registers[B] - (flags[0]?1:0);
+                break;
+            case 8:         //SBC reg-imm
+                registers[A] = registers[A] - value - (flags[0]?1:0);
+                break;
+            case 9:         //AND reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] & registers[B];
+                break;
+            case 10:        //AND reg-imm
+                registers[A] = registers[A] & value;
+                break;
+            case 11:        //OR reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] | registers[B];
+                break;
+            case 12:        //OR reg-imm
+                registers[A] = registers[A] | value;
+                break;
+            case 13:        //XOR reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] ^ registers[B];
+                break;
+            case 14:        //XOR reg-imm
+                registers[A] = registers[A] ^ value;
+                break;
+            case 15:        //LSL reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] << (registers[B]&0b11111);
+                break;
+            case 16:        //LSL reg-imm
+                registers[A] = registers[A] << (value&0b11111);
+                break;
+            case 17:        //LSR reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] >>> (registers[B]&0b11111);
+                break;
+            case 18:        //LSR reg-imm
+                registers[A] = registers[A] >>> (value&0b11111);
+                break;
+            case 19:        //ASR reg-reg
+                byteCount = 2;
+                registers[A] = registers[A] >> (registers[B]&0b11111);
+                break;
+            case 20:        //ASR reg-imm
+                registers[A] = registers[A] >> (value&0b11111);
+                break;
+            case 21:        //ROT reg-reg
+                byteCount = 2;
+                registers[A] = Integer.rotateLeft(registers[A],registers[B]&0b11111);
+                break;
+            case 22:        //ROT reg-imm
+                registers[A] = Integer.rotateLeft(registers[A],value&0b11111);
+                break;
+            case 23:        //MLTL reg-reg
+                byteCount = 2;
+                registers[A] = (int) (Integer.toUnsignedLong(registers[A])*Integer.toUnsignedLong(registers[B]));
+                break;
+            case 24:        //MLTL reg-imm
+                registers[A] = (int) (Integer.toUnsignedLong(registers[A])*Integer.toUnsignedLong(value));
+                break;
+            case 25:        //MLTH reg-reg
+                break;
+            case 26:        //MLTH reg-imm
+                break;
+            case 27:        //MLTHU reg-reg
+                break;
+            case 28:        //MLTHU reg-imm
+                break;
+            case 29:        //DIV reg-reg
+                break;
+            case 30:        //DIV reg-imm
+                break;
+            case 31:        //DIVU reg-reg
+                break;
+            case 32:        //DIVU reg-imm
+                break;
+            case 33:        //MOD reg-reg
+                break;
+            case 34:        //MOD reg-imm
+                break;
+            case 35:        //MODU reg-reg
+                break;
+            case 36:        //MODU reg-imm
+                break;
+            case 37:        //INC
+                break;
+            case 38:        //DEC
+                break;
+            case 39:        //NOT
+                break;
+            case 40:        //NEG
+                break;
+            case 41:        //TST
+                break;
+            case 42:        //BTST reg-reg
+                break;
+            case 43:        //BTST reg-imm
+                break;
+            case 44:        //CMP reg-reg
+                break;
+            case 45:        //CMP reg-imm
+                break;
+            case 46:        //ADSP
+                break;
+            case 47:        //ADPC
+                break;
+            case 48:        //JMP
+                break;
+            case 49:        //CALL
+                break;
+            case 50:        //RET
+                break;
+            case 51:        //BEQ
+                break;
+            case 52:        //BNE
+                break;
+            case 53:        //BLS
+                break;
+            case 54:        //BLE
+                break;
+            case 55:        //BGR
+                break;
+            case 56:        //BGE
+                break;
+            case 57:        //BLSU
+                break;
+            case 58:        //BLEU
+                break;
+            case 59:        //BGRU
+                break;
+            case 60:        //BGEU
+                break;
+            case 61:        //BOF
+                break;
+            case 62:        //BNO
+                break;
+            case 63:        //BPS
+                break;
+            case 64:        //BNG
+                break;
+            case 65:        //MOV reg-reg
+                break;
+            case 66:        //MOV reg-imm
+                break;
+            case 67:        //PSH
+                break;
+            case 68:        //POP
+                break;
+            case 69:        //PSHF
+                break;
+            case 70:        //POPF
+                break;
+            case 71:        //LDB addr
+                break;
+            case 72:        //LDB addr++
+                break;
+            case 73:        //LDB addr--
+                break;
+            case 74:        //LDBU addr
+                break;
+            case 75:        //LDBU addr++
+                break;
+            case 76:        //LDBU addr--
+                break;
+            case 77:        //LDH addr
+                break;
+            case 78:        //LDH addr++
+                break;
+            case 79:        //LDH addr--
+                break;
+            case 80:        //LDHU addr
+                break;
+            case 81:        //LDHU addr++
+                break;
+            case 82:        //LDHU addr--
+                break;
+            case 83:        //LDW addr
+                break;
+            case 84:        //LDW addr++
+                break;
+            case 85:        //LDW addr--
+                break;
+            case 86:        //STB addr
+                break;
+            case 87:        //STB addr++
+                break;
+            case 88:        //STB addr--
+                break;
+            case 89:        //STH addr
+                break;
+            case 90:        //STH addr++
+                break;
+            case 91:        //STH addr--
+                break;
+            case 92:        //STW addr
+                break;
+            case 93:        //STW addr++
+                break;
+            case 94:        //STW addr--
+                break;
+            case 95:        //CPB addr
+                break;
+            case 96:        //CPB addr++
+                break;
+            case 97:        //CPB addr--
+                break;
+            case 98:        //CPH addr
+                break;
+            case 99:        //CPH addr++
+                break;
+            case 100:       //CPH addr--
+                break;
+            case 101:       //CPW addr
+                break;
+            case 102:       //CPW addr++
+                break;
+            case 103:       //CPW addr--
+                break;
+            case 104:       //SEC
+                break;
+            case 105:       //SEO
+                break;
+            case 106:       //SEZ
+                break;
+            case 107:       //SEN
+                break;
+            case 108:       //SEI
+                break;
+            case 109:       //CLC
+                break;
+            case 110:       //CLO
+                break;
+            case 111:       //CLZ
+                break;
+            case 112:       //CLN
+                break;
+            case 113:       //CLI
+                break;
+            case 114:       //IRET
+                break;
+            case 115:       //WFI
+                break;
+            case 116:       //STP
+                break;
+            default:
+                //todo pause sim and show error window
+        }
+        programCounter = byteCount;
     }
+
+
+
 
     public void kill() {
         this.running = false;
     }
 
-    public Instruction[] getInstructions() {
-        return instructions;
-    }
 
-    public void setInstructions(Instruction[] instructions) {
-        this.instructions = instructions;
-    }
-
-    public int getCurrentInstructionIndex() {
-        return currentInstructionIndex;
-    }
-
-    public void setCurrentInstructionIndex(int currentInstructionIndex) {
-        this.currentInstructionIndex = currentInstructionIndex;
-    }
-
-    public int[] getRegisters() {
-        return registers;
-    }
-
-    public void setRegisters(int[] registers) {
-        this.registers = registers;
-    }
-
-    public int[] getRam32() {
-        return ram32;
-    }
-
-    public void setRam32(int[] ram32) {
-        this.ram32 = ram32;
-    }
-
-    public short[] getRam16() {
-        return ram16;
-    }
-
-    public void setRam16(short[] ram16) {
-        this.ram16 = ram16;
-    }
-
-    public byte[] getRam8() {
-        return ram8;
-    }
-
-    public void setRam8(byte[] ram8) {
-        this.ram8 = ram8;
-    }
-
-    public byte[] getRam4() {
-        return ram4;
-    }
-
-    public void setRam4(byte[] ram4) {
-        this.ram4 = ram4;
-    }
-
-    public boolean[] getRam1() {
-        return ram1;
-    }
-
-    public void setRam1(boolean[] ram1) {
-        this.ram1 = ram1;
-    }
 }

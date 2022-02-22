@@ -211,8 +211,8 @@ public class EmulatorWindow {
         jFrame.setMinimumSize(new Dimension(650,400));
         jFrame.setLocationRelativeTo(null);
         URL systemResource = ClassLoader.getSystemResource("icon.png");
-        ImageIcon img = new ImageIcon(systemResource);
-        jFrame.setIconImage(img.getImage());
+        //ImageIcon img = new ImageIcon(systemResource);
+        //jFrame.setIconImage(img.getImage());
         jFrame.setVisible(true);
 
         jFrame.addWindowListener(new WindowAdapter(){
