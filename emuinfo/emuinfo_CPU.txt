@@ -146,33 +146,39 @@ Wykonuje operacje XOR na liczbie z rejestru A i liczbie z instrukcji i zapisuje 
 
 0x0F - LSL reg-reg
 Przesunięcie logiczne w lewo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+Flaga C = ostatni bit przesunięty poza 32-bity z lewej
 |C|O|Z|N|I|
-| | |X|X| |
+|X| |X|X| |
 
 0x10 - LSL reg-imm
 Przesunięcie logiczne w lewo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+Flaga C = ostatni bit przesunięty poza 32-bity z lewej
 |C|O|Z|N|I|
-| | |X|X| |
+|X| |X|X| |
 
 0x11 - LSR reg-reg
 Przesunięcie logiczne w prawo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+Flaga C = ostatni bit przesunięty poza 32-bity z prawej
 |C|O|Z|N|I|
-| | |X|X| |
+|X| |X|X| |
 
 0x12 - LSR reg-imm
 Przesunięcie logiczne w prawo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+Flaga C = ostatni bit przesunięty poza 32-bity z prawej
 |C|O|Z|N|I|
-| | |X|X| |
+|X| |X|X| |
 
 0x13 - ASR reg-reg
 Przesunięcie arytmetyczne w prawo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+Flaga C = ostatni bit przesunięty poza 32-bity z prawej
 |C|O|Z|N|I|
-| | |X|X| |
+|X| |X|X| |
 
 0x14 - ASR reg-imm
 Przesunięcie arytmetyczne w prawo liczby z rejestru A o liczbę z instrukcji (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
+Flaga C = ostatni bit przesunięty poza 32-bity z prawej
 |C|O|Z|N|I|
-| | |X|X| |
+|X| |X|X| |
 
 0x15 - ROT reg-reg
 Przesunięcie cykliczne w lewo liczby z rejestru A o liczbę z rejestru B (tylko bity 4-0 mają znaczenie) i zapisanie wyniku w rejestrze A
@@ -404,252 +410,257 @@ Zapisuje liczbę z instrukcji w rejestrze A
 |C|O|Z|N|I|
 | | | | | |
 
-0x43 - PSH
+0x43 - WSP
+Zapisuje liczbę z rejestru A do wskaźnika stosu
+|C|O|Z|N|I|
+| | | | | |
+
+0x44 - PSH
 Zapisuje liczbę z rejestru A na stosie
 |C|O|Z|N|I|
 | | | | | |
 
-0x44 - POP
+0x45 - POP
 Zdejmuje liczbę ze stosu i zapisuje ją w rejestrze A
 |C|O|Z|N|I|
 | | | | | |
 
-0x45 - PSHF
+0x46 - PSHF
 Zapisuje rejestr flag na stosie
 |C|O|Z|N|I|
 | | | | | |
 
-0x46 - POPF
+0x47 - POPF
 Zdejmuje liczbę ze stosu i zapisuje ją w rejestrze flag
 |C|O|Z|N|I|
 |X|X|X|X|X|
 
-0x47 - LDB addr
+0x48 - LDB addr
 Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x48 - LDB addr++
+0x49 - LDB addr++
 Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x49 - LDB addr--
+0x4A - LDB addr--
 Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x4A - LDBU addr
+0x4B - LDBU addr
 Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x4B - LDBU addr++
+0x4C - LDBU addr++
 Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x4C - LDBU addr--
+0x4D - LDBU addr--
 Odczytuje 8-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x4D - LDH addr
+0x4E - LDH addr
 Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x4E - LDH addr++
+0x4F - LDH addr++
 Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x4F - LDH addr--
+0x50 - LDH addr--
 Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją z zachowaniem znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x50 - LDHU addr
+0x51 - LDHU addr
 Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x51 - LDHU addr++
+0x52 - LDHU addr++
 Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x52 - LDHU addr--
+0x53 - LDHU addr--
 Odczytuje 16-bitową wartość z pamięci/IO, rozszerza ją bez zachowania znaku do 32 bitów i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x53 - LDW addr
+0x54 - LDW addr
 Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x54 - LDW addr++
+0x55 - LDW addr++
 Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 4)
 |C|O|Z|N|I|
 | | | | | |
 
-0x55 - LDW addr--
+0x56 - LDW addr--
 Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w rejestrze A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 4)
 |C|O|Z|N|I|
 | | | | | |
 
-0x56 - STB addr
+0x57 - STB addr
 Zapisuje w pamięci/IO bity 7-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x57 - STB addr++
+0x58 - STB addr++
 Zapisuje w pamięci/IO bity 7-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x58 - STB addr--
+0x59 - STB addr--
 Zapisuje w pamięci/IO bity 7-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x59 - STH addr
+0x5A - STH addr
 Zapisuje w pamięci/IO bity 15-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x5A - STH addr++
+0x5B - STH addr++
 Zapisuje w pamięci/IO bity 15-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x5B - STH addr--
+0x5C - STH addr--
 Zapisuje w pamięci/IO bity 15-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x5C - STW addr
+0x5D - STW addr
 Zapisuje w pamięci/IO bity 31-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji)
 |C|O|Z|N|I|
 | | | | | |
 
-0x5D - STW addr++
+0x5E - STW addr++
 Zapisuje w pamięci/IO bity 31-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zwiększana o 4)
 |C|O|Z|N|I|
 | | | | | |
 
-0x5E - STW addr--
+0x5F - STW addr--
 Zapisuje w pamięci/IO bity 31-0 z rejestru A (Adres = liczba z rejestru B + liczba z instrukcji, wartość rejestru B jest zmniejszana o 4)
 |C|O|Z|N|I|
 | | | | | |
 
-0x5F - CPB addr
+0x60 - CPB addr
 Odczytuje 8-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A)
 |C|O|Z|N|I|
 | | | | | |
 
-0x60 - CPB addr++
+0x61 - CPB addr++
 Odczytuje 8-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zwiększana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x61 - CPB addr--
+0x62 - CPB addr--
 Odczytuje 8-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zmniejszana o 1)
 |C|O|Z|N|I|
 | | | | | |
 
-0x62 - CPH addr
+0x63 - CPH addr
 Odczytuje 16-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A)
 |C|O|Z|N|I|
 | | | | | |
 
-0x63 - CPH addr++
+0x64 - CPH addr++
 Odczytuje 16-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zwiększana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x64 - CPH addr--
+0x65 - CPH addr--
 Odczytuje 16-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zmniejszana o 2)
 |C|O|Z|N|I|
 | | | | | |
 
-0x65 - CPW addr
+0x66 - CPW addr
 Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A)
 |C|O|Z|N|I|
 | | | | | |
 
-0x66 - CPW addr++
+0x67 - CPW addr++
 Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zwiększana o 4)
 |C|O|Z|N|I|
 | | | | | |
 
-0x67 - CPW addr--
+0x68 - CPW addr--
 Odczytuje 32-bitową wartość z pamięci/IO i zapisuje w pamięci/IO (Adres odczytu = liczba z rejestru B, Adres zapisu = liczba z rejestru A, wartość rejestru A i B jest zmniejszana o 4)
 |C|O|Z|N|I|
 | | | | | |
 
-0x68 - SEC
+0x69 - SEC
 Ustawia flagę C na 1
 |C|O|Z|N|I|
 |1| | | | |
 
-0x69 - SEO
+0x6A - SEO
 Ustawia flagę O na 1
 |C|O|Z|N|I|
 | |1| | | |
 
-0x6A - SEZ
+0x6B - SEZ
 Ustawia flagę Z na 1
 |C|O|Z|N|I|
 | | |1| | |
 
-0x6B - SEN
+0x6C - SEN
 Ustawia flagę N na 1
 |C|O|Z|N|I|
 | | | |1| |
 
-0x6C - SEI
+0x6D - SEI
 Ustawia flagę I na 1 (blokuje przerwania)
 |C|O|Z|N|I|
 | | | | |1|
 
-0x6D - CLC
+0x6E - CLC
 Ustawia flagę C na 0
 |C|O|Z|N|I|
 |0| | | | |
 
-0x6E - CLO
+0x6F - CLO
 Ustawia flagę O na 0
 |C|O|Z|N|I|
 | |0| | | |
 
-0x6F - CLZ
+0x70 - CLZ
 Ustawia flagę Z na 0
 |C|O|Z|N|I|
 | | |0| | |
 
-0x70 - CLN
+0x71 - CLN
 Ustawia flagę N na 0
 |C|O|Z|N|I|
 | | | |0| |
 
-0x71 - CLI
+0x72 - CLI
 Ustawia flagę I na 0 (odblokowuje przerwania)
 |C|O|Z|N|I|
 | | | | |0|
 
-0x72 - IRET
+0x73 - IRET
 Przywraca zawartość rejestru flag ze specjalnego rejestru (z wyjątkiem flagi I, która jest ustawiana na 0) i zapisuje adres powrotu z przerwania w liczniku programu
 |C|O|Z|N|I|
 | | | | |0|
 
-0x73 - WFI
+0x74 - WFI
 Wykonuje się w kółko aż procesor dostanie sygnał przerwania (jeżeli flaga przerwań będzie równa 1 to procesor się zawiesi)
 |C|O|Z|N|I|
 | | | | | |
 
-0x74 - STP
+0x75 - STP
 Zatrzymuje procesor
 |C|O|Z|N|I|
 | | | | | |
