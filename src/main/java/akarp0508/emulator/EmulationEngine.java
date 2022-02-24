@@ -461,16 +461,31 @@ public class EmulationEngine implements Runnable{
                 programCounter = flags[3]?(registers[B] + value):programCounter;
                 break;
             case 65:        //MOV reg-reg
+                byteCount=2;
+                registers[A] = registers[B];
                 break;
             case 66:        //MOV reg-imm
+                registers[A] = value;
                 break;
             case 67:        //WSP
+                byteCount=2;
+                stackPointer = registers[A];
                 break;
             case 68:        //PSH
+                byteCount=2;
+                saveToRam(registers[A],stackPointer,(byte)4);
+                stackPointer+=4;
                 break;
             case 69:        //POP
+                byteCount=2;
+                stackPointer-=4;
+                registers[A] = readFromRam(stackPointer,(byte)4);
                 break;
             case 70:        //PSHF
+                int flagsInt =0;
+                for(byte i=0;i<32;i++){
+                    flagsInt = (flagsInt<<1) + (flags[31-i]?1:0);
+                }
                 break;
             case 71:        //POPF
                 break;
