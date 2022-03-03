@@ -36,7 +36,7 @@ public class EmulatorWindow {
     EmulationEngine emulationEngine;
 
 
-    public EmulatorWindow(){
+    public EmulatorWindow(int RAMsize){
         jFrame = new JFrame();
         BorderLayout bl = new BorderLayout();
         JPanel cp = new JPanel(bl);
@@ -221,7 +221,7 @@ public class EmulatorWindow {
             }
         });
 
-        emulationEngine = new EmulationEngine(emulationPreviewPanel,this);
+        emulationEngine = new EmulationEngine(emulationPreviewPanel,this,RAMsize);
         Thread emulationThread = new Thread(emulationEngine);
         emulationThread.start();
 

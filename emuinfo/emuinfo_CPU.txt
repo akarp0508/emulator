@@ -286,12 +286,12 @@ Ustawia flagę Z i N na podstawie liczby z rejestru A nie zmieniając jej
 | | |X|X| |
 
 0x2A - BTST reg-reg
-Ustawia flagę Z na wartość wybranego bitu z rejestru A. Bit jest wybierany przez liczbę z rejestru B (tylko bity 4-0 mają znaczenie)
+Ustawia flagę Z jeżeli wybrany bit z rejestru A jest równy 0. Bit jest wybierany przez liczbę z rejestru B (tylko bity 4-0 mają znaczenie)
 |C|O|Z|N|I|
 | | |X| | |
 
 0x2B - BTST reg-imm
-Ustawia flagę Z na wartość wybranego bitu z rejestru A. Bit jest wybierany przez liczbę z instrukcji (tylko bity 4-0 mają znaczenie)
+Ustawia flagę Z jeżeli wybrany bit z rejestru A jest równy 0. Bit jest wybierany przez liczbę z instrukcji (tylko bity 4-0 mają znaczenie)
 |C|O|Z|N|I|
 | | |X| | |
 

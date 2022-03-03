@@ -6,10 +6,12 @@ import akarp0508.gui.components.EmulationPreviewPanel;
 public class EmulationEngine implements Runnable{
     private final EmulatorWindow window;
 
-    private int[] registers = new int[8];
+    private final int[] registers = new int[8];
 
     private int stackPointer;
-    private int programCounter;
+    private int programCounter = 0x40;
+    private int backupFlags;
+    private int backupPC;
 
     /*
          - bit 0 to flaga przeniesienia (C)
@@ -18,18 +20,22 @@ public class EmulationEngine implements Runnable{
          - bit 3 to flaga ujemności (N)
          - bit 4 to flaga przerwania (I)
     */
-    private boolean[] flags = new boolean[32];
+    private final boolean[] flags = new boolean[32];
 
     private boolean running = true;
 
-    private byte[] RAM = new byte[Integer.MAX_VALUE];
+    private final int[] RAM;
+
+    //przerwania
+    private final boolean[] interruptRegisters = new boolean[16];
+
 
 
     //private Thread gpuThread;
 
-    public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window) {
+    public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window,int RAMsize) {
         this.window = window;
-        //new InstructionDecoder();
+        RAM = new int[RAMsize];
         //gpu = new GPUEmulationEngine(epp);
     }
 
@@ -56,7 +62,7 @@ public class EmulationEngine implements Runnable{
     }
 
     private void executeInstruction(){
-        byte v = RAM[programCounter+1];
+        byte v = (byte)readFromBus(programCounter+1,(byte)1,false);
         byte A = (byte)(v & 0b111);
         byte B = (byte)((v>>3) & 0b111);
         byte byteCount = (byte)((v>>6) & 0b11);
@@ -64,10 +70,10 @@ public class EmulationEngine implements Runnable{
         if(byteCount == 3)
             byteCount = 4;
         for(int i=0; i<byteCount; i++){
-            value = ( value << 8 ) | RAM[programCounter+2+i];
+            value = ( value << 8 ) | (byte)readFromBus(programCounter+2+i,(byte)1,false);
         }
         byteCount+=2;
-        switch(RAM[programCounter]) {
+        switch((byte)readFromBus(programCounter,(byte)1,false)) {
             case 0:         //NOP
                 byteCount = 1;
                 break;
@@ -367,10 +373,10 @@ public class EmulationEngine implements Runnable{
                 break;
             case 42:        //BTST reg-reg
                 byteCount = 2;
-                flags[2] = ((registers[A]>>(registers[B]&0b11111))&1) == 1;
+                flags[2] = ((registers[A]>>(registers[B]&0b11111))&1) == 0;
                 break;
             case 43:        //BTST reg-imm
-                flags[2] = ((registers[A]>>(value&0b11111))&1) == 1;
+                flags[2] = ((registers[A]>>(value&0b11111))&1) == 0;
                 break;
             case 44:        //CMP reg-reg
                 byteCount = 2;
@@ -410,13 +416,13 @@ public class EmulationEngine implements Runnable{
                 programCounter = registers[B] + value;
                 break;
             case 49:        //CALL
-                saveToRam(programCounter+byteCount,stackPointer,(byte)4);
+                writeToBus(programCounter+byteCount,stackPointer,(byte)4);
                 stackPointer+=4;
                 programCounter = registers[B] + value;
                 break;
             case 50:        //RET
                 stackPointer-=4;
-                programCounter = readFromRam(stackPointer,(byte)4);
+                programCounter = readFromBus(stackPointer,(byte)4,false);
                 break;
             case 51:        //BEQ
                 programCounter = flags[2]?(registers[B] + value):programCounter;
@@ -473,113 +479,203 @@ public class EmulationEngine implements Runnable{
                 break;
             case 68:        //PSH
                 byteCount=2;
-                saveToRam(registers[A],stackPointer,(byte)4);
+                writeToBus(registers[A],stackPointer,(byte)4);
                 stackPointer+=4;
                 break;
             case 69:        //POP
                 byteCount=2;
                 stackPointer-=4;
-                registers[A] = readFromRam(stackPointer,(byte)4);
+                registers[A] = readFromBus(stackPointer,(byte)4,false);
                 break;
             case 70:        //PSHF
+                byteCount = 1;
                 int flagsInt =0;
                 for(byte i=0;i<32;i++){
-                    flagsInt = (flagsInt<<1) + (flags[31-i]?1:0);
+                    flagsInt = (flagsInt<<1) | (flags[31-i]?1:0);
                 }
+                writeToBus(flagsInt,stackPointer,(byte)4);
+                stackPointer+=4;
                 break;
             case 71:        //POPF
+                byteCount = 1;
+                flagsInt = readFromBus(stackPointer,(byte)4,false);
+                for(byte i=0;i<32;i++){
+                    flags[i] = (flagsInt&1)==1;
+                    flagsInt>>=1;
+                }
                 break;
             case 72:        //LDB addr
+                registers[A] = readFromBus(registers[B]+value,(byte)1,true);
                 break;
             case 73:        //LDB addr++
+                registers[A] = readFromBus(registers[B]+value,(byte)1,true);
+                registers[B]++;
                 break;
             case 74:        //LDB addr--
+                registers[A] = readFromBus(registers[B]+value,(byte)1,true);
+                registers[B]--;
                 break;
             case 75:        //LDBU addr
+                registers[A] = readFromBus(registers[B]+value,(byte)1,false);
                 break;
             case 76:        //LDBU addr++
+                registers[A] = readFromBus(registers[B]+value,(byte)1,false);
+                registers[B]++;
                 break;
             case 77:        //LDBU addr--
+                registers[A] = readFromBus(registers[B]+value,(byte)1,false);
+                registers[B]--;
                 break;
             case 78:        //LDH addr
+                registers[A] = readFromBus(registers[B]+value,(byte)2,true);
                 break;
             case 79:        //LDH addr++
+                registers[A] = readFromBus(registers[B]+value,(byte)2,true);
+                registers[B]++;
                 break;
             case 80:        //LDH addr--
+                registers[A] = readFromBus(registers[B]+value,(byte)2,true);
+                registers[B]--;
                 break;
             case 81:        //LDHU addr
+                registers[A] = readFromBus(registers[B]+value,(byte)2,false);
                 break;
             case 82:        //LDHU addr++
+                registers[A] = readFromBus(registers[B]+value,(byte)2,false);
+                registers[B]++;
                 break;
             case 83:        //LDHU addr--
+                registers[A] = readFromBus(registers[B]+value,(byte)2,false);
+                registers[B]--;
                 break;
             case 84:        //LDW addr
+                registers[A] = readFromBus(registers[B]+value,(byte)4,true);
                 break;
             case 85:        //LDW addr++
+                registers[A] = readFromBus(registers[B]+value,(byte)4,true);
+                registers[B]++;
                 break;
             case 86:        //LDW addr--
+                registers[A] = readFromBus(registers[B]+value,(byte)4,true);
+                registers[B]--;
                 break;
             case 87:        //STB addr
+                writeToBus(registers[A],registers[B]+value,(byte)1);
                 break;
             case 88:        //STB addr++
+                writeToBus(registers[A],registers[B]+value,(byte)1);
+                registers[B]++;
                 break;
             case 89:        //STB addr--
+                writeToBus(registers[A],registers[B]+value,(byte)1);
+                registers[B]--;
                 break;
             case 90:        //STH addr
+                writeToBus(registers[A],registers[B]+value,(byte)2);
                 break;
             case 91:        //STH addr++
+                writeToBus(registers[A],registers[B]+value,(byte)2);
+                registers[B]++;
                 break;
             case 92:        //STH addr--
+                writeToBus(registers[A],registers[B]+value,(byte)2);
+                registers[B]--;
                 break;
             case 93:        //STW addr
+                writeToBus(registers[A],registers[B]+value,(byte)4);
                 break;
             case 94:        //STW addr++
+                writeToBus(registers[A],registers[B]+value,(byte)4);
+                registers[B]++;
                 break;
             case 95:        //STW addr--
+                writeToBus(registers[A],registers[B]+value,(byte)4);
+                registers[B]--;
                 break;
             case 96:        //CPB addr
+                writeToBus(readFromBus(registers[B],(byte)1,false),registers[A],(byte)1);
                 break;
             case 97:        //CPB addr++
+                writeToBus(readFromBus(registers[B],(byte)1,false),registers[A],(byte)1);
+                registers[A]++;
+                registers[B]++;
                 break;
             case 98:        //CPB addr--
+                writeToBus(readFromBus(registers[B],(byte)1,false),registers[A],(byte)1);
+                registers[A]--;
+                registers[B]--;
                 break;
             case 99:        //CPH addr
+                writeToBus(readFromBus(registers[B],(byte)2,false),registers[A],(byte)2);
                 break;
             case 100:       //CPH addr++
+                writeToBus(readFromBus(registers[B],(byte)2,false),registers[A],(byte)2);
+                registers[A]++;
+                registers[B]++;
                 break;
             case 101:       //CPH addr--
+                writeToBus(readFromBus(registers[B],(byte)2,false),registers[A],(byte)2);
+                registers[A]--;
+                registers[B]--;
                 break;
             case 102:       //CPW addr
+                writeToBus(readFromBus(registers[B],(byte)4,false),registers[A],(byte)4);
                 break;
             case 103:       //CPW addr++
+                writeToBus(readFromBus(registers[B],(byte)4,false),registers[A],(byte)4);
+                registers[A]++;
+                registers[B]++;
                 break;
             case 104:       //CPW addr--
+                writeToBus(readFromBus(registers[B],(byte)4,false),registers[A],(byte)4);
+                registers[A]--;
+                registers[B]--;
                 break;
             case 105:       //SEC
+                flags[0]=true;
                 break;
             case 106:       //SEO
+                flags[1]=true;
                 break;
             case 107:       //SEZ
+                flags[2]=true;
                 break;
             case 108:       //SEN
+                flags[3]=true;
                 break;
             case 109:       //SEI
+                flags[4]=true;
                 break;
             case 110:       //CLC
+                flags[0]=false;
                 break;
             case 111:       //CLO
+                flags[1]=false;
                 break;
             case 112:       //CLZ
+                flags[2]=false;
                 break;
             case 113:       //CLN
+                flags[3]=false;
                 break;
             case 114:       //CLI
+                flags[4]=false;
                 break;
             case 115:       //IRET
+                byteCount = 1;
+                flagsInt = backupFlags;
+                for(byte i=0;i<32;i++){
+                    flags[i] = (flagsInt&1)==1;
+                    flagsInt>>=1;
+                }
+                flags[4]=false;
+                programCounter = backupPC;
                 break;
             case 116:       //WFI
+                //todo zrobic
                 break;
             case 117:       //STP
+                //todo zrobic
                 break;
             default:
                 //todo pause emulation and show error window
@@ -587,19 +683,21 @@ public class EmulationEngine implements Runnable{
         programCounter = byteCount;
     }
 
-    private void saveToRam(int value, int startAddress, byte size){
+    private void writeToBus(int value, int startAddress, byte size){
         startAddress = startAddress & (-size);
-        for(int i=0;i<size;i++){
-            RAM[startAddress+size-1-i] = (byte)value;
-            value = value >> 8;
-        }
+        int mask = ((0xffffffff>>>((4-size)*8)))<<((startAddress&0b11)*8);
+        RAM[startAddress>>>2] = (RAM[startAddress>>>2]&(~mask)) | ((value<<((startAddress&0b11)*8))&mask);
     }
 
-    private int readFromRam(int startAddress, byte size){
+    private int readFromBus(int startAddress, byte size, boolean signed){
         int result = 0;
         startAddress = startAddress & (-size);
+        int mask = ((0xffffffff>>>((4-size)*8)))<<((startAddress&0b11)*8);
         for(int i=0;i<size;i++){
-            result = (result << 8) | RAM[startAddress+size-1-i];
+            result = (RAM[startAddress>>>2]&mask)>>>((startAddress&0b11)*8);
+        }
+        if(signed || size !=4){
+            result = (size==1)?(byte)result:(short)result;
         }
         return result;
     }
