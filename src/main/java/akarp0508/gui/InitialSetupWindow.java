@@ -54,13 +54,13 @@ public class InitialSetupWindow {
         }
         if(onlyDigits){
             long RAMsize = Long.parseLong(text)*multiplier;
-            if(RAMsize-1<=Integer.MAX_VALUE){
-                new EmulatorWindow((int)(RAMsize>>2));
+            if(RAMsize-1<=Integer.MAX_VALUE && RAMsize>0){
+                new EmulatorWindow(RAMsize);
                 jf.setVisible(false); //you can't see me!
                 jf.dispose(); //Destroy the JFrame object
             }
             else{
-                label.setText("Too large number");
+                label.setText(RAMsize==0?"RAM size cannot be 0":"Too large number");
             }
         } else {
             label.setText("Use only digits");
