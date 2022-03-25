@@ -1,0 +1,11 @@
+Procek widzi 4GiB pamięci
+4 ostatnie bity oznaczają jaki układ
+
+0 - RAM/framebuffer
+1 - nic
+2 - grafika (paleta czcionka i inne)
+3 - kontroler przerwań
+4 - peryferia płytki (ledy, switche, przyciski, 7seg, RS232 )
+5 - pamiec flash
+6-14 -> nic
+15 - bootROM

@@ -1,5 +1,6 @@
 package akarp0508.emulator;
 
+import akarp0508.emulator.components.DataField;
 import akarp0508.gui.EmulatorWindow;
 import akarp0508.gui.components.EmulationPreviewPanel;
 
@@ -8,8 +9,12 @@ public class EmulationEngine implements Runnable{
 
     private final int[] registers = new int[8];
 
+    private DataField RAM;
+    private DataField ICMemory;
+    private DataField ROM;
+
     private int stackPointer;
-    private int programCounter = 0x40;
+    private int programCounter = 0xF0000000;
     private int backupFlags;
     private int backupPC;
 
@@ -25,7 +30,6 @@ public class EmulationEngine implements Runnable{
 
     private boolean running = true;
 
-    private final byte[] RAM;
     private byte lastRAMAddress;
 
     //przerwania
@@ -38,9 +42,11 @@ public class EmulationEngine implements Runnable{
 
     //private Thread gpuThread;
 
-    public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window,long RAMsize) {
+    public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window) {
         this.window = window;
-        RAM = new byte[(int)(RAMsize-1)];
+        RAM = new DataField(0x10000000);
+        ICMemory = new DataField(0x2);
+        ROM = new DataField(0x10000000);
         //gpu = new GPUEmulationEngine(epp);
     }
 
@@ -65,6 +71,59 @@ public class EmulationEngine implements Runnable{
             }
         }
     }
+
+
+    private void writeIntToBus(int address, int value){
+        address -= address%4;
+        writeShortToBus(address,(short) value);
+        value >>= 16;
+        writeShortToBus(address+1,(short) value);
+    }
+
+    private int readIntFromBus(int address){
+        address -= address%4;
+        return  ( ( Short.toUnsignedInt(readShortFromBus(address+1) )<<16) | Short.toUnsignedInt(readShortFromBus(address) ) );
+    }
+
+    private void writeShortToBus(int address, short value){
+        address -= address%2;
+        writeByteToBus(address,(byte) value);
+        value >>= 8;
+        writeByteToBus(address+1,(byte) value);
+    }
+
+    private short readShortFromBus(int address){
+        address -= address%2;
+        return (short) ((Byte.toUnsignedInt(readByteFromBus(address+1))<<8) | (Byte.toUnsignedInt(readByteFromBus(address))));
+    }
+
+    private void writeByteToBus(int address, byte value){
+        int component = address>>>7*4;
+        address -= component;
+        switch (component) {
+            case 0 -> RAM.writeByte(address, value);
+            case 3 -> ICMemory.writeByte(address, value);
+            case 15 -> ROM.writeByte(address, value);
+        }
+    }
+
+    private byte readByteFromBus(int address){
+        int component = address>>>7*4;
+        address -= component;
+
+        return switch (component) {
+            case 0 -> RAM.readByte(address);
+            case 3 -> ICMemory.readByte(address);
+            case 15 -> ROM.readByte(address);
+            default -> 0;
+        };
+    }
+
+
+    public void kill() {
+        this.running = false;
+    }
+
 
     private void executeInstruction(){
         byte v = readByteFromBus(programCounter+1);
@@ -692,82 +751,10 @@ public class EmulationEngine implements Runnable{
                 }
                 flags[4] = true;
 
-                programCounter = readIntFromBus(i* 4L);
+                programCounter = readIntFromBus(i*4);
                 break;
             }
         }
-    }
-
-    private void writeIntToBus(long address, int value){
-        address -= address%4;
-        writeShortToBus(address,(short) value);
-        value >>= 16;
-        writeShortToBus(address+1,(short) value);
-    }
-
-    private int readIntFromBus(long address){
-        address -= address%4;
-        return  ( ( Short.toUnsignedInt(readShortFromBus(address+1) )<<16) | Short.toUnsignedInt(readShortFromBus(address) ) );
-    }
-
-    private void writeShortToBus(long address, short value){
-        address -= address%2;
-        writeByteToBus(address,(byte) value);
-        value >>= 8;
-        writeByteToBus(address+1,(byte) value);
-    }
-
-    private short readShortFromBus(long address){
-        address -= address%2;
-        return (short) ((Byte.toUnsignedInt(readByteFromBus(address+1))<<8) | (Byte.toUnsignedInt(readByteFromBus(address))));
-    }
-
-    private void writeByteToBus(long address, byte value){
-        if(address < RAM.length)
-            RAM[(int)address] = value;
-        if(address == RAM.length)
-            lastRAMAddress = value;
-        if(address == 0x80000000L){
-            for(int i=0; i<8; i++){
-                interruptMask[i] = (value & 1) == 1;
-                value >>= 1;
-            }
-        }
-        if(address == 0x80000001L){
-            for(int i=0; i<8; i++){
-                interruptMask[8+i] = (value & 1) == 1;
-                value >>= 1;
-            }
-        }
-        //todo do grafiki i błąd
-    }
-
-    private byte readByteFromBus(long address){
-        if(address < RAM.length)
-            return RAM[(int)address];
-        if(address == RAM.length)
-            return lastRAMAddress;
-        if(address == 0x80000000L){
-            int res = 0;
-            for(int i=0;i<8;i++){
-                res = (res << 1) | (interruptMask[7-i]?1:0);
-            }
-            return (byte)res;
-        }
-        if(address == 0x80000001L){
-            int res = 0;
-            for(int i=0;i<8;i++){
-                res = (res << 1) | (interruptMask[15-i]?1:0);
-            }
-            return (byte)res;
-        }
-        //todo do grafiki i błąd
-        return 0;
-    }
-
-
-    public void kill() {
-        this.running = false;
     }
 
 

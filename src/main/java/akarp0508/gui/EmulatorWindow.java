@@ -36,7 +36,7 @@ public class EmulatorWindow {
     EmulationEngine emulationEngine;
 
 
-    public EmulatorWindow(long RAMsize){
+    public EmulatorWindow(){
         jFrame = new JFrame();
         BorderLayout bl = new BorderLayout();
         JPanel cp = new JPanel(bl);
@@ -165,7 +165,7 @@ public class EmulatorWindow {
 
         registerEditButton.setBackground(Values.ELEMENTS_COLOR);
         registerEditButton.setForeground(Values.TEXT_COLOR);
-        registerEditButton.setBounds(2,200,100,30);
+        registerEditButton.setBounds(2,200,202,30);
 
         editGraphicPanel.add(registerEditButton);
 
@@ -174,27 +174,9 @@ public class EmulatorWindow {
 
         ramEditButton.setBackground(Values.ELEMENTS_COLOR);
         ramEditButton.setForeground(Values.TEXT_COLOR);
-        ramEditButton.setBounds(104,200,100,30);
+        ramEditButton.setBounds(2,234,202,30);
 
         editGraphicPanel.add(ramEditButton);
-
-        VRamEditButton= new JButton("Edytuj VRAM");
-        //startButton.addActionListener(e-> deleteGraphic());
-
-        VRamEditButton.setBackground(Values.ELEMENTS_COLOR);
-        VRamEditButton.setForeground(Values.TEXT_COLOR);
-        VRamEditButton.setBounds(2,232,100,30);
-
-        editGraphicPanel.add(VRamEditButton);
-
-        ROMEditButton= new JButton("Edytuj ROM");
-        //resetButton.addActionListener(e-> deleteGraphic());
-
-        ROMEditButton.setBackground(Values.ELEMENTS_COLOR);
-        ROMEditButton.setForeground(Values.TEXT_COLOR);
-        ROMEditButton.setBounds(104,232,100,30);
-
-        editGraphicPanel.add(ROMEditButton);
 
         cp.add(BorderLayout.EAST,editGraphicPanel);
 
@@ -221,7 +203,7 @@ public class EmulatorWindow {
             }
         });
 
-        emulationEngine = new EmulationEngine(emulationPreviewPanel,this,RAMsize);
+        emulationEngine = new EmulationEngine(emulationPreviewPanel,this);
         Thread emulationThread = new Thread(emulationEngine);
         emulationThread.start();
 
