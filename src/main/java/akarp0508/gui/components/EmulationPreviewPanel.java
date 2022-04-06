@@ -28,11 +28,15 @@ public class EmulationPreviewPanel extends JPanel {
 
         int pixelSize;
 
-        int size1 = panelHeight/192;
-        int size2 = panelWidth/256;
+        int imgHeight = image.getHeight(null);
+        int imgWidth = image.getWidth(null);
+
+
+        int size1 = panelHeight/imgHeight;
+        int size2 = panelWidth/imgWidth;
         pixelSize = Math.min(size1,size2);
-        Image scaledImage = image.getScaledInstance(pixelSize*256,pixelSize*192,Image.SCALE_FAST);
-        g.drawImage(scaledImage,panelWidth/2-128*pixelSize,panelHeight/2-96*pixelSize,null);
+        Image scaledImage = image.getScaledInstance(pixelSize*imgWidth,pixelSize*imgHeight,Image.SCALE_FAST);
+        g.drawImage(scaledImage,panelWidth/2-imgWidth*pixelSize/2,panelHeight/2-imgHeight*pixelSize/2,null);
 
     }
 }

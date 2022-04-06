@@ -34,6 +34,7 @@ public class EmulatorWindow {
     EmulationPreviewPanel emulationPreviewPanel;
 
     EmulationEngine emulationEngine;
+    Thread emulationThread;
 
 
     public EmulatorWindow(){
@@ -65,7 +66,7 @@ public class EmulatorWindow {
         editGraphicPanel.add(emulationInstructionAddressLabel);
 
         startButton= new JButton("Start");
-        //startButton.addActionListener(e-> deleteGraphic());
+        startButton.addActionListener(e-> start());
 
         startButton.setBackground(Values.ELEMENTS_COLOR);
         startButton.setForeground(Values.TEXT_COLOR);
@@ -83,7 +84,7 @@ public class EmulatorWindow {
         editGraphicPanel.add(resetButton);
 
         pauseButton= new JButton("Pauza");
-        //startButton.addActionListener(e-> deleteGraphic());
+        pauseButton.addActionListener(e-> pause());
 
         pauseButton.setBackground(Values.ELEMENTS_COLOR);
         pauseButton.setForeground(Values.TEXT_COLOR);
@@ -204,12 +205,23 @@ public class EmulatorWindow {
         });
 
         emulationEngine = new EmulationEngine(emulationPreviewPanel,this);
-        Thread emulationThread = new Thread(emulationEngine);
-        emulationThread.start();
 
     }
 
     public void setActualIPS(long ips){
         emulationClockLabel.setText("IPS: "+ips);
     }
+
+    private void start(){
+        emulationEngine.setRunning(true);
+        emulationThread = new Thread(emulationEngine);
+        emulationThread.start();
+    }
+
+
+    private void pause(){
+        emulationEngine.setRunning(false);
+    }
+
+
 }

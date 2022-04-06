@@ -7,7 +7,7 @@
     - sygnały V-blank i H-blank trwają 1 cykl grafiki (25-25.175 MHz jeszcze nie wiem) i są włączane tylko jeżeli są aktywowane we flagach GPU
  - 4 tryby graficzne:
     - tryb tekstowy (tryb 0):
-       - 80x30 znaków
+       - 80x25 znaków
        - znak 8x16 pikseli (WxH)
        - 256 różnych znaków
        - redefiniowalne znaki

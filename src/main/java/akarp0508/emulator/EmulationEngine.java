@@ -6,6 +6,7 @@ import akarp0508.gui.components.EmulationPreviewPanel;
 
 public class EmulationEngine implements Runnable{
     private final EmulatorWindow window;
+    private final GPUEmulationEngine gpu;
 
     private final int[] registers = new int[8];
 
@@ -28,7 +29,7 @@ public class EmulationEngine implements Runnable{
 
     private final boolean[] flags = new boolean[32];
 
-    private boolean running = true;
+    private boolean running = false;
 
     private byte lastRAMAddress;
 
@@ -40,14 +41,12 @@ public class EmulationEngine implements Runnable{
         interruptRegisters[id&0b1111] = interruptMask[id & 0b1111] || interruptRegisters[id & 0b1111];
     }
 
-    //private Thread gpuThread;
 
     public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window) {
         this.window = window;
-        RAM = new DataField(0x10000000);
-        ICMemory = new DataField(0x2);
-        ROM = new DataField(0x10000000);
-        //gpu = new GPUEmulationEngine(epp);
+        RAM = new DataField(196608);
+        ROM = new DataField(8192);
+        gpu = new GPUEmulationEngine(epp);
     }
 
     public void setRegister(byte index,int value){
@@ -70,8 +69,18 @@ public class EmulationEngine implements Runnable{
                 lastTime = System.nanoTime();
             }
         }
+
+        actualIPS=0;
+        window.setActualIPS(actualIPS);
     }
 
+    public boolean isRunning() {
+        return running;
+    }
+
+    public void setRunning(boolean running) {
+        this.running = running;
+    }
 
     private void writeIntToBus(int address, int value){
         address -= address%4;
@@ -109,7 +118,7 @@ public class EmulationEngine implements Runnable{
 
     private byte readByteFromBus(int address){
         int component = address>>>7*4;
-        address -= component;
+        address &= 0x0FFFFFFF;
 
         return switch (component) {
             case 0 -> RAM.readByte(address);
