@@ -1,6 +1,6 @@
 package akarp0508.gui;
 
-import akarp0508.emulator.EmulationEngine;
+import akarp0508.emulator.CPU.EmulationEngine;
 import akarp0508.gui.components.EmulationPreviewPanel;
 
 import javax.swing.*;

@@ -1,38 +1,72 @@
- - rozdzielczość 640x480 (sygnał przesyłany do monitora / wielkość okna emulatora)
- - 12-bitowy kolor (RGB 4,4,4)
- - odświeżanie 60 hz
- - sygnały przerwań V-blank i H-blank:
-    - sygnał V-blank jest włączany po narysowaniu ostatniego piksela klatki (639, 479)
-    - sygnał H-blank jest włączany po narysowaniu ostatniego piksela linii
-    - sygnały V-blank i H-blank trwają 1 cykl grafiki (25-25.175 MHz jeszcze nie wiem) i są włączane tylko jeżeli są aktywowane we flagach GPU
- - 4 tryby graficzne:
-    - tryb tekstowy (tryb 0):
-       - 80x25 znaków
-       - znak 8x16 pikseli (WxH)
-       - 256 różnych znaków
-       - redefiniowalne znaki
-       - 16 kolorów tła i znaku
-       - stała paleta (osobna od palety trybów graficznych)
-    - tryb graficzny 160x120 (tryb 1)
-       - rozdzielczość 160x120 pikseli
-       - paleta 256 kolorów
-       - redefiniowalna paleta
-       - 1 bajt w framebufferze to 1 piksel
-    - tryb graficzny 320x240 (tryb 2)
-       - rozdzielczość 320x240 pikseli
-       - paleta 16 kolorów
-       - redefiniowalna paleta
-       - 1 bajt w framebufferze to 2 piksele
-    - tryb graficzny 640x480 (tryb 3)
-       - rozdzielczość 640x480 pikseli
-       - paleta 2 kolorów
-       - redefiniowalna paleta
-       - 1 bajt w framebufferze to 8 pikseli
+1280x800 60Hz
 
-Adresy:
-    0x90000000-0x900095FF (38400 B x2) - framebuffer (oba framebuffery są zmapowane pod te same adresy a flaga GPU wybiera który jest widoczny na szynie pamięci/IO, drugi jest wyświetlany)
-    0x90009600-0x900097FF (512 B) - paleta trybów graficznych (każdy kolor to 2 bajty, bity 11-0 to kolor, reszta niewykorzystywana)
-    0x90009800-0x9000A7FF (4096 B) - lista znaków trybu tekstowego (16 bajtów to 1 znak, bajt 1 to pierwsza linijka znaku od góry, 0 to tło, 1 to znak)
-    0x9000A800-0x9000BABF (4800 B) - kolory i wybór znaku (2 bajty na znak, 2400 znaków, bajt 1 to wybór znaku, bajt drugi to kolory tła i znaku, bity 7-4 to kolor tła, bity 3-0 to kolor znaku)
-    0x9000BAC0 (1 B) - flagi GPU (bit 0 włącza renderowanie obrazu, bit 1 aktywuje sygnał V-blank, bit 2 aktywuje sygnał H-blank, bit 3 zamienia framebuffery)
-    0x9000BAC1 (1 B) - tryb graficzny (bity 1-0 wybierają tryb graficzny)
+adresy grafiki:
+
+0x20000000 (1B) - tryb grafiki
+0x20000001 (1B) - flagi grafiki
+0x20000002 (2B) - numer linijki przerwania H-blank
+0x20000004 (4B) - adres 1 strony grafiki
+0x20000008 (4B) - adres 2 strony grafiki
+0x2000000C (20B) - nic (zero)
+0x20000020 (512B) - paleta kolorów
+
+TRYBY GRAFIKI:
+
+10 trybów
+
+0x00 - tryb tekstowy 80x25 - 16 kolorów (16 bitów na znak)
+
+0x01 - tryb graficzny 160x100 2 kolory (1 bit na piksel)
+0x02 - tryb graficzny 160x100 16 kolorów (4 bity na piksel)
+0x03 - tryb graficzny 160x100 256 kolorów (8 bitów na piksel)
+
+0x04 - tryb graficzny 320x200 2 kolory (1 bit na piksel)
+0x05 - tryb graficzny 320x200 16 kolorów (4 bity na piksel)
+0x06 - tryb graficzny 320x200 256 kolorów (8 bitów na piksel)
+
+0x07 - tryb graficzny 640x400 2 kolory (1 bit na piksel)
+0x08 - tryb graficzny 640x400 16 kolorów (4 bity na piksel)
+
+0x0A - tryb graficzny 1280x800 2 kolory (1 bit na piksel)
+
+FLAGI GPU:
+
+bit 0 - włącznik grafiki (0 - czarny ekran, 1 - jakaś grafika)
+bit 1 - włącznik przerwania po narysowaniu klatki (1 - włączone)
+bit 2 - włącznik przerwania po narysowaniu linijki (1 - włączone, numer linijki jest pod adresem 0x20000002)
+bit 3 - numer rysowanej strony grafiki (0 - strona 1, 1 - strona 2)
+bity 4-7 - nic
+
+PRZERWANIA:
+
+grafika puszcza sygnał przerwania H-blank po narysowaniu ostatniego piksela wybranej linijki (jeżeli jest włączone)
+grafika puszcza sygnał przerwania V-blank po narysowaniu ostatniego piksela klatki (jeżeli jest włączone)
+
+
+STRONY GRAFIKI:
+
+grafika ma 2 strony pamięci z których może brać piksele (adresy są wybierane w rejestrach kontrolnych)
+jeżeli grafika ma ustawiony tryb np 0x05 i adres strony = 0x00020000 to grafika będzie odczytywać
+32-bitowe wartości z kolejnych adresów strony i rysować piksele na podstawie tych danych
+w trybie 0x05 jeden piksel zajmuje 4 bity wiec grafika po odczycie 32-bitów spod adresu 0x00020000
+narysuje 8 pikseli
+
+PALETA:
+
+paleta ma 512 bajtów
+każdy kolor zajmuje 2 bajty
+bajty 1-0 to kolor 0 palety bajty 3-2 to kolor 1 itd
+bity 3-0 to niebieski
+bity 7-4 to zielony
+bity 11-8 to czerwony
+bity 15-12 nie są wykorzystywane
+
+jeżeli wybrany tryb graficzny obsługuje np 16 kolorów to 4 bity wybierają kolory palety 0-15
+
+TRYB TEKSTOWY:
+
+80x25
+16 bitów na znak
+bity 3-0 to kolor tła
+bity 7-4 to kolor znaku
+bity 15-8 to numer znaku (256 wszystkich znaków)

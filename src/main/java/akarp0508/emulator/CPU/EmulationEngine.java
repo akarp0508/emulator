@@ -1,18 +1,19 @@
-package akarp0508.emulator;
+package akarp0508.emulator.CPU;
 
 import akarp0508.emulator.components.DataField;
+import akarp0508.emulator.GPU.GPUEmulationEngine;
 import akarp0508.gui.EmulatorWindow;
 import akarp0508.gui.components.EmulationPreviewPanel;
 
 public class EmulationEngine implements Runnable{
     private final EmulatorWindow window;
-    private final GPUEmulationEngine gpu;
+    private final GPUEmulationEngine GPU;
 
     private final int[] registers = new int[8];
 
-    private DataField RAM;
-    private DataField ICMemory;
-    private DataField ROM;
+    private final DataField RAM;
+    private final DataField ICMemory;
+    private final DataField ROM;
 
     private int stackPointer;
     private int programCounter = 0xF0000000;
@@ -45,8 +46,9 @@ public class EmulationEngine implements Runnable{
     public EmulationEngine(EmulationPreviewPanel epp, EmulatorWindow window) {
         this.window = window;
         RAM = new DataField(196608);
+        ICMemory = new DataField(0); // <--- todo
         ROM = new DataField(8192);
-        gpu = new GPUEmulationEngine(epp);
+        GPU = new GPUEmulationEngine(epp,this);
     }
 
     public void setRegister(byte index,int value){
@@ -82,50 +84,35 @@ public class EmulationEngine implements Runnable{
         this.running = running;
     }
 
-    private void writeIntToBus(int address, int value){
-        address -= address%4;
-        writeShortToBus(address,(short) value);
-        value >>= 16;
-        writeShortToBus(address+1,(short) value);
+    private DataField getDataFieldFromBusAddress(int address){
+        int component = address>>>7*4;
+        return switch(component) {
+            case 0 -> RAM;
+            case 2 -> GPU.getVRAM();
+            case 3 -> ICMemory;
+            case 15 -> ROM;
+            default -> new DataField(0);
+        };
     }
 
     private int readIntFromBus(int address){
-        address -= address%4;
-        return  ( ( Short.toUnsignedInt(readShortFromBus(address+1) )<<16) | Short.toUnsignedInt(readShortFromBus(address) ) );
+        return getDataFieldFromBusAddress(address).readInt(address);
     }
-
-    private void writeShortToBus(int address, short value){
-        address -= address%2;
-        writeByteToBus(address,(byte) value);
-        value >>= 8;
-        writeByteToBus(address+1,(byte) value);
-    }
-
     private short readShortFromBus(int address){
-        address -= address%2;
-        return (short) ((Byte.toUnsignedInt(readByteFromBus(address+1))<<8) | (Byte.toUnsignedInt(readByteFromBus(address))));
+        return getDataFieldFromBusAddress(address).readShort(address);
     }
-
-    private void writeByteToBus(int address, byte value){
-        int component = address>>>7*4;
-        address -= component;
-        switch (component) {
-            case 0 -> RAM.writeByte(address, value);
-            case 3 -> ICMemory.writeByte(address, value);
-            case 15 -> ROM.writeByte(address, value);
-        }
-    }
-
     private byte readByteFromBus(int address){
-        int component = address>>>7*4;
-        address &= 0x0FFFFFFF;
+        return getDataFieldFromBusAddress(address).readByte(address);
+    }
 
-        return switch (component) {
-            case 0 -> RAM.readByte(address);
-            case 3 -> ICMemory.readByte(address);
-            case 15 -> ROM.readByte(address);
-            default -> 0;
-        };
+    private void writeIntToBus(int address, int value){
+        getDataFieldFromBusAddress(address).writeInt(address, value);
+    }
+    private void writeShortToBus(int address, short value){
+        getDataFieldFromBusAddress(address).writeShort(address, value);
+    }
+    private void writeByteToBus(int address, byte value){
+        getDataFieldFromBusAddress(address).writeByte(address, value);
     }
 
 
