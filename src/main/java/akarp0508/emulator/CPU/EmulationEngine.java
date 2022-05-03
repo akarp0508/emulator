@@ -56,6 +56,10 @@ public class EmulationEngine implements Runnable{
             registers[index] = value;
     }
 
+    public DataField getRAM() {
+        return RAM;
+    }
+
     public void run(){
 
         long lastTime = System.nanoTime();

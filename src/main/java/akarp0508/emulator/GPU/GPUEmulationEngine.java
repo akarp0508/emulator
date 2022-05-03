@@ -5,6 +5,8 @@ import akarp0508.emulator.CPU.RAMDataField;
 import akarp0508.gui.components.EmulationPreviewPanel;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.nio.Buffer;
 
 public class GPUEmulationEngine {
 
@@ -35,14 +37,30 @@ private final EmulationPreviewPanel emulationPreviewPanel;
         if(VRAM.getMode()==0){
             drawTextImage();
         }
+        else{
+            image = new BufferedImage(256,192,BufferedImage.TYPE_INT_RGB);
+        }
+        updateImage();
     }
 
     private void drawTextImage(){
+        for(int x = 0; x<80; x++){
+            for(int y = 0; y<25; y++){
+                int letterData = (int) cpuEmulationEngine.getRAM().readShort(getPageIndex()+(x+y*80)*2);
+                int letterID = letterData >>> 8;
+                int foregroundColorID = (letterData >>> 4) & 0b1111;
+                int backgroundColorID = letterData & 0b1111;
+                drawLetter(letterID,foregroundColorID,backgroundColorID, x, y);
+            }
+        }
+    }
 
+    private void drawLetter( int letterID, int foregroundColorID, int backgroundColorID,int x, int y){
+        //todo tu dokonczyc
     }
 
     private int getPageIndex(){
-        if(VRAM.getFlags())
+        return VRAM.getFlag(3) ? VRAM.getSecondPageAddress() : VRAM.getFirstPageAddress();
     }
 
     private enum ScreenModes

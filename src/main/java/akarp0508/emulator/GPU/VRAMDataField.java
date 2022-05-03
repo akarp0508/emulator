@@ -13,8 +13,8 @@ public class VRAMDataField extends DataField {
     public byte getFlags(){
         return readByte(0x1);
     }
-    public boolean getFlag(){
-        return read
+    public boolean getFlag(int i){
+        return ((readByte(1)>>i)&1)==1;
     }
     public short getHBlankLineNumber(){
         return readShort(0x2);
